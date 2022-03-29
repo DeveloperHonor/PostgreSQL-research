@@ -67,9 +67,21 @@ LANGUAGE PLPGSQL;
 
 ---Example---
 --postgres=# select f_get_run_sql(1871);
---NOTICE:  进程id:1871, 数据库名称:db1, 用户名称:postgres, 应用程序名称:psql, 客户端地址:<NULL>, 进程启动时间:2022-03-29 20:09:34 CST, 状态:active, 等待事件:LWLock: WALWrite, 阻塞进程:{}, 状态变更时间:2022-03-29 20:14:16 CST, SQL调用时间:2022-03-29 20:14:16 CST, 后台类型:client backend,
+--NOTICE:  
+--进程id:1871
+--数据库名称:db1
+--用户名称:postgres
+--应用程序名称:psql
+--客户端地址:<NULL>
+--进程启动时间:2022-03-29 20:09:34 CST
+--状态:active
+--等待事件:<NULL>
+--阻塞进程:{}
+--状态变更时间:2022-03-29 20:38:03 CST
+--SQL调用时间:2022-03-29 20:38:03 CST
+--后台类型:client backend,
 --SQL语句:insert into tab_t1 select id,md5(id::varchar) from generate_series(1,10000000) as id;
---SQL运行时长:0.25
- 
+--SQL运行时长:0.10
+
 
 

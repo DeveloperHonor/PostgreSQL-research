@@ -1,0 +1,51 @@
+#Fetching the sql runtime state by pid
+CREATE OR REPLACE FUNCTION f_get_run_sql(integer)
+RETURNS void
+AS
+$FUNCTION$
+DECLARE 
+	v_cur refcursor;
+	v_data record;
+BEGIN
+	open v_cur for SELECT
+					    pid,
+					    datname,
+					    usename,
+					    application_name,
+					    client_addr,
+					    pg_catalog.to_char(backend_start, 'YYYY-MM-DD HH24:MI:SS TZ') AS backend_start,
+					    state,
+					    wait_event_type || ': ' || wait_event AS wait_event,
+					    pg_catalog.pg_blocking_pids(pid) AS blocking_pids,
+					    query,
+					    pg_catalog.to_char(state_change, 'YYYY-MM-DD HH24:MI:SS TZ') AS state_change,
+					    pg_catalog.to_char(query_start, 'YYYY-MM-DD HH24:MI:SS TZ') AS query_start,
+					    backend_type,
+					    CASE WHEN state = 'active' THEN ROUND((extract(epoch from now() - query_start) / 60)::numeric, 2) ELSE 0 END AS runtime
+					FROM
+					    pg_catalog.pg_stat_activity
+					WHERE
+						pid = $1;
+
+	LOOP 
+		fetch v_cur into v_data;
+		exit when not found ;
+		raise notice 
+		'进程id:%, 数据库名称:%, 用户名称:%, 应用程序名称:%, 客户端地址:%, 进程启动时间:%, 状态:%, 等待事件:%, 阻塞进程:%, 状态变更时间:%, SQL调用时间:%, 后台类型:%,
+		SQL语句:%
+		SQL运行时长:%',
+		v_data.pid,v_data.datname,v_data.usename,v_data.application_name,v_data.client_addr,v_data.backend_start,v_data.state,v_data.wait_event,v_data.blocking_pids,v_data.state_change,v_data.query_start,v_data.backend_type,v_data.query,v_data.runtime;
+	END LOOP;
+	close v_cur;
+END;
+$FUNCTION$
+LANGUAGE PLPGSQL;
+
+---Example---
+--postgres=# select f_get_run_sql(1871);
+--NOTICE:  进程id:1871, 数据库名称:db1, 用户名称:postgres, 应用程序名称:psql, 客户端地址:<NULL>, 进程启动时间:2022-03-29 20:09:34 CST, 状态:active, 等待事件:LWLock: WALWrite, 阻塞进程:{}, 状态变更时间:2022-03-29 20:14:16 CST, SQL调用时间:2022-03-29 20:14:16 CST, 后台类型:client backend,
+--SQL语句:insert into tab_t1 select id,md5(id::varchar) from generate_series(1,10000000) as id;
+--SQL运行时长:0.25
+ 
+
+
